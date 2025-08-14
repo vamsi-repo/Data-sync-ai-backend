@@ -42,7 +42,7 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s: %(message)s',
-    port = int(os.environ.get('PORT', 8000))
+    handlers=[logging.StreamHandler()]  # Only console logging for Railway
 )
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
@@ -4696,4 +4696,5 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
