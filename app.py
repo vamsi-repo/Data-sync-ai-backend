@@ -46,22 +46,35 @@ logging.basicConfig(
 )
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
-CORS(app, supports_credentials=True, origins=[
-    "http://localhost:3000", 
-    "http://localhost:8080", 
-    "https://your-frontend-url.railway.app",  # Add your Railway frontend URL
-    "*"  # Remove this in production for security
-])
+CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8080", "*"])
 
 app.secret_key = os.urandom(24).hex()
-app.config['SESSION_TYPE'] = 'sqlalchemy'
-app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessions')
+
+# Ensure directories exist and are writable in Railway.app (DO THIS FIRST)
+try:
+    session_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessions')
+    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    os.makedirs(session_dir, exist_ok=True)
+    os.makedirs(upload_dir, exist_ok=True)
+except OSError as e:
+    logging.error(f"Failed to create directories: {e}")
+    # Fallback to /tmp for Railway.app's ephemeral filesystem
+    session_dir = '/tmp/sessions'
+    upload_dir = '/tmp/uploads'
+    os.makedirs(session_dir, exist_ok=True)
+    os.makedirs(upload_dir, exist_ok=True)
+
+# Configure session with the created directories
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = session_dir
+app.config['UPLOAD_FOLDER'] = upload_dir
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production if using HTTPS
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')  # Changed 'Uploads' to 'uploads' for consistency
-Session(app)
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400
+
+# Initialize session (AFTER directory creation and config)
+Session(app)  # ✅ Fixed: removed extra parenthesis
 
 # Ensure directories exist and are writable in Railway.app
 try:
@@ -4695,6 +4708,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
