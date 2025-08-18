@@ -4748,9 +4748,7 @@ def initialize_database_once():
 # Call this AFTER all functions are defined
 initialize_database_once()
 
-# Keep your existing if __name__ == '__main__': block below this
-if __name__ == '__main__':
-    # your existing code...
+
 
 if __name__ == '__main__':
     try:
@@ -4769,6 +4767,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
