@@ -4743,14 +4743,14 @@ def initialize_database_once():
         conn = get_direct_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
-        result = cursor.fetchone()  # ✅ Fixed: fetch the result
+        result = cursor.fetchone()
         cursor.close()
         logging.info("Database connection test successful")
         
         # Check if tables exist
         cursor = conn.cursor()
         cursor.execute("SHOW TABLES")
-        existing_tables = cursor.fetchall()  # ✅ Already correct
+        existing_tables = cursor.fetchall()
         cursor.close()
         
         if len(existing_tables) == 0:
@@ -4857,47 +4857,47 @@ def initialize_database_once():
             # Add missing columns if needed
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'source_format'")
-                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                result = cursor.fetchall()
                 if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN source_format VARCHAR(50)")
                     logging.info("Added source_format column to validation_rule_types table")
-            except:
+            except Exception:
                 pass
-                
+            
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'target_format'")
-                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                result = cursor.fetchall()
                 if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN target_format VARCHAR(50)")
                     logging.info("Added target_format column to validation_rule_types table")
-            except:
+            except Exception:
                 pass
-                
+            
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'data_type'")
-                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                result = cursor.fetchall()
                 if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN data_type VARCHAR(50)")
                     logging.info("Added data_type column to validation_rule_types table")
-            except:
+            except Exception:
                 pass
-                
+            
             try:
                 cursor.execute("SHOW COLUMNS FROM excel_templates LIKE 'remote_file_path'")
-                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                result = cursor.fetchall()
                 if not result:
                     cursor.execute("ALTER TABLE excel_templates ADD COLUMN remote_file_path VARCHAR(512)")
                     logging.info("Added remote_file_path column to excel_templates table")
-            except:
+            except Exception:
                 pass
-                
+            
             try:
                 cursor.execute("SHOW COLUMNS FROM template_columns LIKE 'is_selected'")
-                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                result = cursor.fetchall()
                 if not result:
                     cursor.execute("ALTER TABLE template_columns ADD COLUMN is_selected BOOLEAN DEFAULT FALSE")
                     logging.info("Added is_selected column to template_columns table")
-            except:
+            except Exception:
                 pass
             
             conn.commit()
@@ -4912,20 +4912,21 @@ def initialize_database_once():
             """, ('Admin', 'User', 'admin@example.com', '1234567890', admin_password))
             conn.commit()
             logging.info("Admin user created")
-
-           try:
+            
+            try:
                 cursor.execute("SELECT id, email, first_name FROM login_details WHERE email = 'admin@example.com'")
                 admin_check = cursor.fetchall()
                 if admin_check:
                     logging.info(f"Admin user found in database: {admin_check}")
                 else:
                     logging.error("Admin user NOT found in database!")
-                    
+                
                 cursor.execute("SELECT COUNT(*) as count FROM login_details")
                 user_count = cursor.fetchone()
                 logging.info(f"Total users in database: {user_count[0]}")
             except Exception as e:
                 logging.error(f"Error checking admin user: {str(e)}")
+            
             # Create default validation rules
             default_rules = [
                 ("Required", "Ensures the field is not null", '{"allow_null": false}', None, None, None),
@@ -4949,16 +4950,16 @@ def initialize_database_once():
             # Verify creation
             cursor = conn.cursor()
             cursor.execute("SHOW TABLES")
-            new_tables = cursor.fetchall()  # ✅ Already correct
+            new_tables = cursor.fetchall()
             cursor.close()
             
             logging.info(f"=== DATABASE INITIALIZATION COMPLETE ===")
             logging.info(f"Created {len(new_tables)} tables: {[t[0] for t in new_tables]}")
         else:
             logging.info(f"Database already initialized with {len(existing_tables)} tables")
-            
+        
         conn.close()
-            
+        
     except Exception as e:
         logging.error(f"=== DATABASE INITIALIZATION FAILED ===")
         logging.error(f"Error: {str(e)}")
@@ -4985,6 +4986,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
