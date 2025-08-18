@@ -48,56 +48,6 @@ logging.basicConfig(
 )
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
-def initialize_database_once():
-    """Initialize database on first worker startup"""
-    try:
-        logging.info("=== STARTING DATABASE INITIALIZATION ===")
-        
-        # Test connection first
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.close()
-        logging.info("Database connection test successful")
-        
-        # Check if tables exist
-        cursor = conn.cursor()
-        cursor.execute("SHOW TABLES")
-        existing_tables = cursor.fetchall()
-        cursor.close()
-        
-        if len(existing_tables) == 0:
-            logging.info("No tables found. Creating database structure...")
-            
-            with app.app_context():
-                init_db()
-                logging.info("Tables created successfully")
-                
-                create_admin_user()
-                logging.info("Admin user created")
-                
-                create_default_validation_rules()
-                logging.info("Default validation rules created")
-            
-            # Verify creation
-            cursor = conn.cursor()
-            cursor.execute("SHOW TABLES")
-            new_tables = cursor.fetchall()
-            cursor.close()
-            
-            logging.info(f"=== DATABASE INITIALIZATION COMPLETE ===")
-            logging.info(f"Created {len(new_tables)} tables: {[t[0] for t in new_tables]}")
-        else:
-            logging.info(f"Database already initialized with {len(existing_tables)} tables")
-            
-    except Exception as e:
-        logging.error(f"=== DATABASE INITIALIZATION FAILED ===")
-        logging.error(f"Error: {str(e)}")
-        import traceback
-        logging.error(traceback.format_exc())
-
-# Initialize database when module loads
-initialize_database_once()
 CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8080", "*"])
 
 app.secret_key = os.urandom(24).hex()
@@ -4746,6 +4696,62 @@ def download_transformed_file(template_id):
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+# Move this entire block to the BOTTOM of app.py
+def initialize_database_once():
+    """Initialize database on first worker startup"""
+    try:
+        logging.info("=== STARTING DATABASE INITIALIZATION ===")
+        
+        # Test connection first
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        logging.info("Database connection test successful")
+        
+        # Check if tables exist
+        cursor = conn.cursor()
+        cursor.execute("SHOW TABLES")
+        existing_tables = cursor.fetchall()
+        cursor.close()
+        
+        if len(existing_tables) == 0:
+            logging.info("No tables found. Creating database structure...")
+            
+            with app.app_context():
+                init_db()
+                logging.info("Tables created successfully")
+                
+                create_admin_user()
+                logging.info("Admin user created")
+                
+                create_default_validation_rules()
+                logging.info("Default validation rules created")
+            
+            # Verify creation
+            cursor = conn.cursor()
+            cursor.execute("SHOW TABLES")
+            new_tables = cursor.fetchall()
+            cursor.close()
+            
+            logging.info(f"=== DATABASE INITIALIZATION COMPLETE ===")
+            logging.info(f"Created {len(new_tables)} tables: {[t[0] for t in new_tables]}")
+        else:
+            logging.info(f"Database already initialized with {len(existing_tables)} tables")
+            
+    except Exception as e:
+        logging.error(f"=== DATABASE INITIALIZATION FAILED ===")
+        logging.error(f"Error: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+
+# Call this AFTER all functions are defined
+initialize_database_once()
+
+# Keep your existing if __name__ == '__main__': block below this
+if __name__ == '__main__':
+    # your existing code...
+
 if __name__ == '__main__':
     try:
         with app.app_context():
@@ -4763,6 +4769,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
