@@ -94,8 +94,35 @@ DB_CONFIG = {
     'host': os.getenv('MYSQL_HOST', 'localhost'),
     'user': os.getenv('MYSQL_USER', 'root'),
     'password': os.getenv('MYSQL_PASSWORD', 'Keansa@2024'),
-    'database': os.getenv('MYSQL_DATABASE', 'data_validation_36'),
+    'database': os.getenv('MYSQL_DATABASE', 'railway'),
 }
+
+def get_direct_db_connection():
+    """Get database connection without using Flask's g object"""
+    try:
+        # First, ensure database exists
+        temp_conn = mysql.connector.connect(
+            host=DB_CONFIG['host'],
+            user=DB_CONFIG['user'],
+            password=DB_CONFIG['password']
+        )
+        cursor = temp_conn.cursor()
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_CONFIG['database']}")
+        cursor.close()
+        temp_conn.close()
+        
+        # Now connect to the specific database
+        conn = mysql.connector.connect(**DB_CONFIG)
+        logging.info("Direct database connection established successfully")
+        return conn
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            logging.error("Database connection failed: Access denied for user - check username/password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            logging.error("Database connection failed: Database does not exist")
+        else:
+            logging.error(f"Database connection failed: {err}")
+        raise Exception(f"Failed to connect to database: {str(err)}")
 
 def get_db_connection():
     if 'db' not in g:
@@ -4702,8 +4729,8 @@ def initialize_database_once():
     try:
         logging.info("=== STARTING DATABASE INITIALIZATION ===")
         
-        # Test connection first
-        conn = get_db_connection()
+        # Use direct connection instead of Flask's g object
+        conn = get_direct_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
         cursor.close()
@@ -4718,15 +4745,177 @@ def initialize_database_once():
         if len(existing_tables) == 0:
             logging.info("No tables found. Creating database structure...")
             
-            with app.app_context():
-                init_db()
-                logging.info("Tables created successfully")
+            # Create tables directly without Flask context
+            tables = [
+                """
+                CREATE TABLE IF NOT EXISTS login_details (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    first_name VARCHAR(100),
+                    last_name VARCHAR(100),
+                    email VARCHAR(255) UNIQUE,
+                    mobile VARCHAR(10),
+                    password VARCHAR(255)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS excel_templates (
+                    template_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    template_name VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    user_id INT NOT NULL,
+                    sheet_name VARCHAR(255),
+                    headers JSON,
+                    status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+                    is_corrected BOOLEAN DEFAULT FALSE,
+                    remote_file_path VARCHAR(512),
+                    FOREIGN KEY (user_id) REFERENCES login_details(id) ON DELETE CASCADE
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS template_columns (
+                    column_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    template_id BIGINT NOT NULL,
+                    column_name VARCHAR(255) NOT NULL,
+                    column_position INT NOT NULL,
+                    is_validation_enabled BOOLEAN DEFAULT FALSE,
+                    is_selected BOOLEAN DEFAULT FALSE,
+                    FOREIGN KEY (template_id) REFERENCES excel_templates(template_id) ON DELETE CASCADE,
+                    UNIQUE (template_id, column_name)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS validation_rule_types (
+                    rule_type_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    rule_name VARCHAR(255) UNIQUE NOT NULL,
+                    description TEXT,
+                    parameters TEXT,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    is_custom BOOLEAN DEFAULT FALSE,
+                    column_name VARCHAR(255),
+                    template_id BIGINT,
+                    data_type VARCHAR(50),
+                    source_format VARCHAR(50),
+                    target_format VARCHAR(50),
+                    FOREIGN KEY (template_id) REFERENCES excel_templates(template_id) ON DELETE CASCADE
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS column_validation_rules (
+                    column_validation_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    column_id BIGINT NOT NULL,
+                    rule_type_id BIGINT NOT NULL,
+                    rule_config JSON,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (column_id) REFERENCES template_columns(column_id) ON DELETE CASCADE,
+                    FOREIGN KEY (rule_type_id) REFERENCES validation_rule_types(rule_type_id) ON DELETE RESTRICT,
+                    UNIQUE (column_id, rule_type_id)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS validation_history (
+                    history_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    template_id BIGINT NOT NULL,
+                    template_name VARCHAR(255) NOT NULL,
+                    error_count INT NOT NULL,
+                    corrected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    corrected_file_path VARCHAR(512) NOT NULL,
+                    user_id INT NOT NULL,
+                    FOREIGN KEY (template_id) REFERENCES excel_templates(template_id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES login_details(id) ON DELETE CASCADE
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS validation_corrections (
+                    correction_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    history_id BIGINT NOT NULL,
+                    row_index INT NOT NULL,
+                    column_name VARCHAR(255) NOT NULL,
+                    original_value TEXT,
+                    corrected_value TEXT,
+                    rule_failed VARCHAR(255) DEFAULT NULL,
+                    FOREIGN KEY (history_id) REFERENCES validation_history(history_id) ON DELETE CASCADE
+                )
+                """
+            ]
+            
+            cursor = conn.cursor()
+            for table_sql in tables:
+                cursor.execute(table_sql)
+            
+            # Add missing columns if needed
+            try:
+                cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'source_format'")
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN source_format VARCHAR(50)")
+                    logging.info("Added source_format column to validation_rule_types table")
+            except:
+                pass
                 
-                create_admin_user()
-                logging.info("Admin user created")
+            try:
+                cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'target_format'")
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN target_format VARCHAR(50)")
+                    logging.info("Added target_format column to validation_rule_types table")
+            except:
+                pass
                 
-                create_default_validation_rules()
-                logging.info("Default validation rules created")
+            try:
+                cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'data_type'")
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN data_type VARCHAR(50)")
+                    logging.info("Added data_type column to validation_rule_types table")
+            except:
+                pass
+                
+            try:
+                cursor.execute("SHOW COLUMNS FROM excel_templates LIKE 'remote_file_path'")
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE excel_templates ADD COLUMN remote_file_path VARCHAR(512)")
+                    logging.info("Added remote_file_path column to excel_templates table")
+            except:
+                pass
+                
+            try:
+                cursor.execute("SHOW COLUMNS FROM template_columns LIKE 'is_selected'")
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE template_columns ADD COLUMN is_selected BOOLEAN DEFAULT FALSE")
+                    logging.info("Added is_selected column to template_columns table")
+            except:
+                pass
+            
+            conn.commit()
+            logging.info("Tables created successfully")
+            
+            # Create admin user
+            import bcrypt
+            admin_password = bcrypt.hashpw('admin'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cursor.execute("""
+                INSERT IGNORE INTO login_details (first_name, last_name, email, mobile, password)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ('Admin', 'User', 'admin@example.com', '1234567890', admin_password))
+            conn.commit()
+            logging.info("Admin user created")
+            
+            # Create default validation rules
+            default_rules = [
+                ("Required", "Ensures the field is not null", '{"allow_null": false}', None, None, None),
+                ("Int", "Validates integer format", '{"format": "integer"}', None, None, "Int"),
+                ("Float", "Validates number format (integer or decimal)", '{"format": "float"}', None, None, "Float"),
+                ("Text", "Allows text with quotes and parentheses", '{"allow_special": false}', None, None, "Text"),
+                ("Email", "Validates email format", '{"regex": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\\\.[a-zA-Z0-9-.]+$"}', None, None, "Email"),
+                ("Date", "Validates date", '{"format": "%d-%m-%Y"}', "DD-MM-YYYY", None, "Date"),
+                ("Boolean", "Validates boolean format (true/false or 0/1)", '{"format": "boolean"}', None, None, "Boolean"),
+                ("Alphanumeric", "Validates alphanumeric format", '{"format": "alphanumeric"}', None, None, "Alphanumeric")
+            ]
+            cursor.executemany("""
+                INSERT IGNORE INTO validation_rule_types (rule_name, description, parameters, is_custom, source_format, target_format, data_type)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, [(name, desc, params, False, source, target, dtype) for name, desc, params, source, target, dtype in default_rules])
+            conn.commit()
+            logging.info("Default validation rules created")
+            
+            cursor.close()
             
             # Verify creation
             cursor = conn.cursor()
@@ -4739,14 +4928,13 @@ def initialize_database_once():
         else:
             logging.info(f"Database already initialized with {len(existing_tables)} tables")
             
+        conn.close()
+            
     except Exception as e:
         logging.error(f"=== DATABASE INITIALIZATION FAILED ===")
         logging.error(f"Error: {str(e)}")
         import traceback
         logging.error(traceback.format_exc())
-
-# Call this AFTER all functions are defined
-initialize_database_once()
 
 
 
@@ -4767,6 +4955,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
