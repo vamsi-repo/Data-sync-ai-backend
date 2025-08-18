@@ -49,9 +49,9 @@ logging.basicConfig(
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
 CORS(app, supports_credentials=True, origins=[
-    "http://localhost:3000", 
+    "http://localhost:5000", 
     "http://localhost:8080",
-    "https://your-frontend-production-url.railway.app",  # ADD THIS
+    "creative-curiosity-production.up.railway.app",  # ADD THIS
     "*"
 ])
 
@@ -4992,6 +4992,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
