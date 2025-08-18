@@ -97,11 +97,12 @@ logging.info(f"MYSQL_USER: {os.getenv('MYSQL_USER', 'NOT_SET')}")
 logging.info(f"MYSQL_PASSWORD: {'SET' if os.getenv('MYSQL_PASSWORD') else 'NOT_SET'}")
 logging.info(f"MYSQL_DATABASE: {os.getenv('MYSQL_DATABASE', 'NOT_SET')}")
 
+# Hardcode the credentials temporarily since Railway env vars aren't working
 DB_CONFIG = {
-    'host': os.getenv('MYSQL_HOST', 'mysql.railway.internal'),
-    'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', 'nmHNKdIcsHaFpYPirsWYPBgrVLjhbZZI'),
-    'database': os.getenv('MYSQL_DATABASE', 'railway'),
+    'host': 'mysql.railway.internal',
+    'user': 'root',
+    'password': 'nmHNKdIcsHaFpYPirsWYPBgrVLjhbZZI',
+    'database': 'railway',
 }
 
 logging.info(f"Final DB_CONFIG: host={DB_CONFIG['host']}, user={DB_CONFIG['user']}, database={DB_CONFIG['database']}")
@@ -4966,6 +4967,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
