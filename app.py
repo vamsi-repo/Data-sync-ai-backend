@@ -48,7 +48,12 @@ logging.basicConfig(
 )
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
-CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8080", "*"])
+CORS(app, supports_credentials=True, origins=[
+    "http://localhost:3000", 
+    "http://localhost:8080",
+    "https://your-frontend-production-url.railway.app",  # ADD THIS
+    "*"
+])
 
 app.secret_key = os.urandom(24).hex()
 
@@ -98,11 +103,12 @@ logging.info(f"MYSQL_PASSWORD: {'SET' if os.getenv('MYSQL_PASSWORD') else 'NOT_S
 logging.info(f"MYSQL_DATABASE: {os.getenv('MYSQL_DATABASE', 'NOT_SET')}")
 
 # Hardcode the credentials temporarily since Railway env vars aren't working
+# Use Railway's automatically injected MySQL environment variables
 DB_CONFIG = {
-    'host': 'mysql.railway.internal',
-    'user': 'root',
-    'password': 'nmHNKdIcsHaFpYPirsWYPBgrVLjhbZZI',
-    'database': 'railway',
+    'host': os.getenv('MYSQL_HOST', 'mysql.railway.internal'),
+    'user': os.getenv('MYSQL_USER', 'root'),
+    'password': os.getenv('MYSQL_PASSWORD'),  # Railway auto-injects this
+    'database': os.getenv('MYSQL_DATABASE', 'railway'),
 }
 
 logging.info(f"Final DB_CONFIG: host={DB_CONFIG['host']}, user={DB_CONFIG['user']}, database={DB_CONFIG['database']}")
@@ -4980,12 +4986,13 @@ except Exception as e:
 if __name__ == '__main__':
     try:
         # Get port from environment variable (Railway sets this automatically)
-        port = int(os.environ.get('PORT', 3000))
+        port = int(os.environ.get('PORT', 5000))
         logging.info(f"Starting Flask server on port {port}...")
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
