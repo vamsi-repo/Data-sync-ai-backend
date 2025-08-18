@@ -4703,11 +4703,15 @@ if __name__ == '__main__':
             create_admin_user()
             logging.info("Creating default validation rules...")
             create_default_validation_rules()
-        logging.info("Starting Flask server...")
-        app.run(debug=False, host='0.0.0.0', port=5000)  # Use the port variable
+        
+        # Get port from environment variable (Railway sets this automatically)
+        port = int(os.environ.get('PORT', 5000))
+        logging.info(f"Starting Flask server on port {port}...")
+        app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
