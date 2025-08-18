@@ -4704,10 +4704,11 @@ if __name__ == '__main__':
             logging.info("Creating default validation rules...")
             create_default_validation_rules()
         logging.info("Starting Flask server...")
-        app.run(debug=False, host='0.0.0.0', port=port)  # Use the port variable
+        app.run(debug=False, host='0.0.0.0', port=5000)  # Use the port variable
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
