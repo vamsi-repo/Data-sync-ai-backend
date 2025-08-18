@@ -4938,16 +4938,18 @@ def initialize_database_once():
 
 
 
+# Initialize database when module is loaded (for Gunicorn)
+try:
+    logging.info("Attempting to initialize database on module load...")
+    initialize_database_once()
+    logging.info("Database initialization completed on module load")
+except Exception as e:
+    logging.error(f"Failed to initialize database on module load: {e}")
+    import traceback
+    logging.error(traceback.format_exc())
+
 if __name__ == '__main__':
     try:
-        with app.app_context():
-            logging.info("Initializing database...")
-            init_db()
-            logging.info("Creating admin user...")
-            create_admin_user()
-            logging.info("Creating default validation rules...")
-            create_default_validation_rules()
-        
         # Get port from environment variable (Railway sets this automatically)
         port = int(os.environ.get('PORT', 8000))
         logging.info(f"Starting Flask server on port {port}...")
@@ -4955,6 +4957,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
