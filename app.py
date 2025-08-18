@@ -4743,13 +4743,14 @@ def initialize_database_once():
         conn = get_direct_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
+        result = cursor.fetchone()  # ✅ Fixed: fetch the result
         cursor.close()
         logging.info("Database connection test successful")
         
         # Check if tables exist
         cursor = conn.cursor()
         cursor.execute("SHOW TABLES")
-        existing_tables = cursor.fetchall()
+        existing_tables = cursor.fetchall()  # ✅ Already correct
         cursor.close()
         
         if len(existing_tables) == 0:
@@ -4856,7 +4857,8 @@ def initialize_database_once():
             # Add missing columns if needed
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'source_format'")
-                if not cursor.fetchone():
+                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN source_format VARCHAR(50)")
                     logging.info("Added source_format column to validation_rule_types table")
             except:
@@ -4864,7 +4866,8 @@ def initialize_database_once():
                 
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'target_format'")
-                if not cursor.fetchone():
+                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN target_format VARCHAR(50)")
                     logging.info("Added target_format column to validation_rule_types table")
             except:
@@ -4872,7 +4875,8 @@ def initialize_database_once():
                 
             try:
                 cursor.execute("SHOW COLUMNS FROM validation_rule_types LIKE 'data_type'")
-                if not cursor.fetchone():
+                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                if not result:
                     cursor.execute("ALTER TABLE validation_rule_types ADD COLUMN data_type VARCHAR(50)")
                     logging.info("Added data_type column to validation_rule_types table")
             except:
@@ -4880,7 +4884,8 @@ def initialize_database_once():
                 
             try:
                 cursor.execute("SHOW COLUMNS FROM excel_templates LIKE 'remote_file_path'")
-                if not cursor.fetchone():
+                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                if not result:
                     cursor.execute("ALTER TABLE excel_templates ADD COLUMN remote_file_path VARCHAR(512)")
                     logging.info("Added remote_file_path column to excel_templates table")
             except:
@@ -4888,7 +4893,8 @@ def initialize_database_once():
                 
             try:
                 cursor.execute("SHOW COLUMNS FROM template_columns LIKE 'is_selected'")
-                if not cursor.fetchone():
+                result = cursor.fetchall()  # ✅ Fixed: fetch the result
+                if not result:
                     cursor.execute("ALTER TABLE template_columns ADD COLUMN is_selected BOOLEAN DEFAULT FALSE")
                     logging.info("Added is_selected column to template_columns table")
             except:
@@ -4930,7 +4936,7 @@ def initialize_database_once():
             # Verify creation
             cursor = conn.cursor()
             cursor.execute("SHOW TABLES")
-            new_tables = cursor.fetchall()
+            new_tables = cursor.fetchall()  # ✅ Already correct
             cursor.close()
             
             logging.info(f"=== DATABASE INITIALIZATION COMPLETE ===")
@@ -4945,7 +4951,6 @@ def initialize_database_once():
         logging.error(f"Error: {str(e)}")
         import traceback
         logging.error(traceback.format_exc())
-
 
 
 # Initialize database when module is loaded (for Gunicorn)
@@ -4967,6 +4972,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
