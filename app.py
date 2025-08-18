@@ -4913,17 +4913,19 @@ def initialize_database_once():
             conn.commit()
             logging.info("Admin user created")
 
-            cursor.execute("SELECT id, email, first_name FROM login_details WHERE email = 'admin@example.com'")
-            admin_check = cursor.fetchall()
-            if admin_check:
-                logging.info(f"Admin user found in database: {admin_check}")
-            else:
-                logging.error("Admin user NOT found in database!")
-    
-cursor.execute("SELECT COUNT(*) as count FROM login_details")
-user_count = cursor.fetchone()
-logging.info(f"Total users in database: {user_count[0]}")
-            
+           try:
+                cursor.execute("SELECT id, email, first_name FROM login_details WHERE email = 'admin@example.com'")
+                admin_check = cursor.fetchall()
+                if admin_check:
+                    logging.info(f"Admin user found in database: {admin_check}")
+                else:
+                    logging.error("Admin user NOT found in database!")
+                    
+                cursor.execute("SELECT COUNT(*) as count FROM login_details")
+                user_count = cursor.fetchone()
+                logging.info(f"Total users in database: {user_count[0]}")
+            except Exception as e:
+                logging.error(f"Error checking admin user: {str(e)}")
             # Create default validation rules
             default_rules = [
                 ("Required", "Ensures the field is not null", '{"allow_null": false}', None, None, None),
@@ -4983,6 +4985,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
