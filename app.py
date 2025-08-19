@@ -49,10 +49,9 @@ logging.basicConfig(
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
 CORS(app, supports_credentials=True, origins=[
-    #"http://localhost:5000", 
-    #"http://localhost:8080",
-    "creative-curiosity-production.up.railway.app",  # ADD THIS
-    "*"
+    "https://data-sync-ai-frontend-production.up.railway.app",  # Your actual frontend
+    "http://localhost:8080",  # For local development
+    "*"  # Keep for now, remove in production
 ])
 
 app.secret_key = os.urandom(24).hex()
@@ -4983,6 +4982,19 @@ except Exception as e:
     import traceback
     logging.error(traceback.format_exc())
 
+# Move this to the bottom, after all other routes
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    # Add this check to prevent API route conflicts
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # Serve static files from the Vite build (dist folder)
+    if path and os.path.exists(os.path.join(app.static_folder, path)):
+        return app.send_static_file(path)
+    return app.send_static_file('index.html')
+
 if __name__ == '__main__':
     try:
         # Get port from environment variable (Railway sets this automatically)
@@ -4992,6 +5004,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
