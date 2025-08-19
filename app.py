@@ -53,11 +53,17 @@ CORS(app,
      origins=[
          "https://data-sync-ai-frontend-production.up.railway.app",
          "http://localhost:8080",
-         "*"  # Keep this for debugging, remove later
+         "*"
      ],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     allow_headers=[
+         "Content-Type", 
+         "Authorization", 
+         "X-Requested-With",
+         "Accept",
+         "Origin"
+     ],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     expose_headers=["*"]
+     expose_headers=["Content-Type", "Authorization"]
 )
 
 @app.before_request
@@ -5010,6 +5016,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
