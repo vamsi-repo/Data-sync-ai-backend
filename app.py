@@ -48,11 +48,23 @@ logging.basicConfig(
 )
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
-CORS(app, supports_credentials=True, origins=[
-    "https://data-sync-ai-frontend-production.up.railway.app",
-    "http://localhost:8080",
-    "*"
-])
+CORS(app, 
+     supports_credentials=True,
+     origins=[
+         "https://data-sync-ai-frontend-production.up.railway.app",
+         "http://localhost:8080",
+         "*"  # Keep this for debugging, remove later
+     ],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     expose_headers=["*"]
+)
+
+@app.before_request
+def log_requests():
+    logging.info(f"Request: {request.method} {request.url}")
+    logging.info(f"Origin: {request.headers.get('Origin')}")
+    logging.info(f"User-Agent: {request.headers.get('User-Agent')}")
 
 app.secret_key = os.urandom(24).hex()
 
@@ -820,13 +832,7 @@ def get_validation_errors(df, rules, headers):
             pass
     return error_locations
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    # Serve static files from the Vite build (dist folder)
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return app.send_static_file(path)
-    return app.send_static_file('index.html')
+
 
 @app.route('/check-auth', methods=['GET'])
 def check_auth():
@@ -4982,7 +4988,18 @@ except Exception as e:
     import traceback
     logging.error(traceback.format_exc())
 
-
+# Move this route to the VERY END of all your routes
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    # Add this check to prevent API route conflicts
+    if path and (path.startswith('api/') or path.startswith('health') or path.startswith('check-auth')):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # Serve static files from the Vite build (dist folder)
+    if path and os.path.exists(os.path.join(app.static_folder, path)):
+        return app.send_static_file(path)
+    return app.send_static_file('index.html')
 
 if __name__ == '__main__':
     try:
