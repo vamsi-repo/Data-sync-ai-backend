@@ -49,9 +49,9 @@ logging.basicConfig(
 
 app = Flask(__name__, static_folder='./dist', static_url_path='')
 CORS(app, supports_credentials=True, origins=[
-    "https://data-sync-ai-frontend-production.up.railway.app",  # Your actual frontend
-    "http://localhost:8080",  # For local development
-    "*"  # Keep for now, remove in production
+    "https://data-sync-ai-frontend-production.up.railway.app",
+    "http://localhost:8080",
+    "*"
 ])
 
 app.secret_key = os.urandom(24).hex()
@@ -4993,6 +4993,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
