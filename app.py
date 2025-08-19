@@ -4982,18 +4982,7 @@ except Exception as e:
     import traceback
     logging.error(traceback.format_exc())
 
-# Move this to the bottom, after all other routes
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    # Add this check to prevent API route conflicts
-    if path.startswith('api/'):
-        return jsonify({'error': 'API endpoint not found'}), 404
-    
-    # Serve static files from the Vite build (dist folder)
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return app.send_static_file(path)
-    return app.send_static_file('index.html')
+
 
 if __name__ == '__main__':
     try:
@@ -5004,6 +4993,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
