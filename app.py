@@ -5010,12 +5010,13 @@ def serve(path):
 if __name__ == '__main__':
     try:
         # Get port from environment variable (Railway sets this automatically)
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 8000))
         logging.info(f"Starting Flask server on port {port}...")
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
