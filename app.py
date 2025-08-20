@@ -88,6 +88,10 @@ except OSError as e:
     os.makedirs(session_dir, exist_ok=True)
     os.makedirs(upload_dir, exist_ok=True)
 
+# Add this after the existing DB logging
+logging.info(f"PORT: {os.getenv('PORT', 'NOT_SET')}")
+logging.info(f"All environment variables containing 'PORT': {[k for k in os.environ.keys() if 'PORT' in k.upper()]}")
+
 # Configure session with the created directories
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = session_dir
@@ -5012,10 +5016,12 @@ if __name__ == '__main__':
         # Get port from environment variable (Railway sets this automatically)
         port = int(os.environ.get('PORT', 8000))
         logging.info(f"Starting Flask server on port {port}...")
+        logging.info(f"Environment PORT variable: {os.environ.get('PORT', 'NOT_SET')}")
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
