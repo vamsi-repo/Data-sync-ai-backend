@@ -24,4 +24,4 @@ RUN mkdir -p /tmp/uploads /tmp/sessions
 EXPOSE 8000
 
 # Start command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app", "--timeout", "300"]
+CMD gunicorn --bind 0.0.0.0:$PORT app:app
