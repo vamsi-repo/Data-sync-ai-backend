@@ -131,12 +131,7 @@ except OSError as e:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 
-# Debug environment variables
-logging.info(f"Environment variables:")
-logging.info(f"MYSQL_HOST: {os.getenv('MYSQL_HOST', 'NOT_SET')}")
-logging.info(f"MYSQL_USER: {os.getenv('MYSQL_USER', 'NOT_SET')}")
-logging.info(f"MYSQL_PASSWORD: {'SET' if os.getenv('MYSQL_PASSWORD') else 'NOT_SET'}")
-logging.info(f"MYSQL_DATABASE: {os.getenv('MYSQL_DATABASE', 'NOT_SET')}")
+
 
 # Hardcode the credentials temporarily since Railway env vars aren't working
 # Use Railway's automatically injected MySQL environment variables
@@ -5036,6 +5031,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
