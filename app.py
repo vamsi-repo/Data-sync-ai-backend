@@ -39,6 +39,11 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 import threading
 from contextlib import contextmanager
+
+import os
+print(f"=== DEBUG: PORT = {os.environ.get('PORT', 'NOT_FOUND')} ===")
+print(f"=== DEBUG: All env vars = {list(os.environ.keys())} ===")
+
 load_dotenv()
 
 logging.basicConfig(
@@ -91,6 +96,16 @@ except OSError as e:
 # Add this after the existing DB logging
 logging.info(f"PORT: {os.getenv('PORT', 'NOT_SET')}")
 logging.info(f"All environment variables containing 'PORT': {[k for k in os.environ.keys() if 'PORT' in k.upper()]}")
+
+# Debug environment variables
+logging.info(f"Environment variables:")
+logging.info(f"MYSQL_HOST: {os.getenv('MYSQL_HOST', 'NOT_SET')}")
+logging.info(f"MYSQL_USER: {os.getenv('MYSQL_USER', 'NOT_SET')}")
+logging.info(f"MYSQL_PASSWORD: {'SET' if os.getenv('MYSQL_PASSWORD') else 'NOT_SET'}")
+logging.info(f"MYSQL_DATABASE: {os.getenv('MYSQL_DATABASE', 'NOT_SET')}")
+# ADD THESE LINES:
+logging.info(f"PORT: {os.getenv('PORT', 'NOT_SET')}")
+logging.info(f"All PORT-related env vars: {[f'{k}={v}' for k, v in os.environ.items() if 'port' in k.lower()]}")
 
 # Configure session with the created directories
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -5021,6 +5036,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(f"Failed to start application: {e}")
         raise
+
 
 
 
